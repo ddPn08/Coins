@@ -2,17 +2,21 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 
 import dev.s7a.gradle.minecraft.server.tasks.LaunchMinecraftServerTask
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
+
 plugins {
     kotlin("jvm") version ("1.6.10")
+    kotlin("plugin.serialization") version("1.6.10")
     id("com.github.johnrengelman.shadow") version ("7.1.1")
     id("net.minecrell.plugin-yml.bukkit") version ("0.5.0")
     id("dev.s7a.gradle.minecraft.server") version ("1.1.0")
 }
 
-val projectId = "template"
-val projectName = "Template"
-val projectGroup = "run.dn5"
-val projectDescription = "Paper plugin template"
+val projectId = "coins"
+val projectName = "Coins"
+val projectGroup = "run.dn5.sasa"
+val projectDescription = "Coin plugin"
 val projectVersion = "1.0-SNAPSHOT"
 val artifactName = "${projectName}-${projectVersion}.jar"
 
@@ -28,19 +32,41 @@ java {
 repositories {
     mavenCentral()
     maven("https://papermc.io/repo/repository/maven-public/")
+    maven("https://jitpack.io")
 }
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.10")
+    implementation("com.charleskorn.kaml:kaml:0.43.0")
     compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7")
 }
 
 bukkit {
-    main = "$projectGroup.${rootProject.name}.PaperPlugin"
+    main = "$projectGroup.${projectId}.PaperPlugin"
     apiVersion = "1.18"
     load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
     authors = listOf("ddPn08")
+    depend = listOf("Vault")
     defaultPermission = BukkitPluginDescription.Permission.Default.OP
+    commands {
+        register("coins") {
+            description = "Manage coins"
+            aliases = listOf("coin")
+            permission = "coins.command"
+        }
+    }
+    permissions {
+        register("coins.command") {
+            description = "Manage coins"
+            default = BukkitPluginDescription.Permission.Default.TRUE
+        }
+    }
+}
+
+val relocateShadow by tasks.registering(ConfigureShadowRelocation::class) {
+    target = tasks.shadowJar.get()
+    prefix = projectGroup
 }
 
 tasks {
@@ -48,6 +74,7 @@ tasks {
         kotlinOptions.jvmTarget = "17"
     }
     shadowJar {
+        dependsOn(relocateShadow)
         archiveFileName.set(artifactName)
     }
     register<LaunchMinecraftServerTask>("server") {
